@@ -2,7 +2,11 @@
 
 An ETH DPHPC research fork of [ecmwf/WeatherGenerator](https://github.com/ecmwf/WeatherGenerator) for _Towards Memory-Efficient Training of WeatherGenerator_. The project profiles and optimizes the training data path from storage through CPU memory to GPU inputs and the encoder.
 
-The working branch is `dphpc/dev`. This is a collaborative research codebase built on the upstream WeatherGenerator model, not a standalone model authored by one contributor.
+## Ongoing ETH team project
+
+I am working on this project as part of an ETH DPHPC team. Our focus is profiling and improving memory efficiency in WeatherGenerator's training data pipeline. This personal fork makes the shared code, experiment records, and research setup visible while retaining the team's and upstream contributors' history.
+
+The working branch is `dphpc/dev`. The underlying WeatherGenerator model comes from the upstream collaboration.
 
 ## Architecture and research scope
 
