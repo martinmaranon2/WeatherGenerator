@@ -1,10 +1,77 @@
-# WeatherGenerator: memory-efficient data loading
+# WeatherGenerator — Memory-Efficient Training
 
-Fork of [ecmwf/WeatherGenerator](https://github.com/ecmwf/WeatherGenerator) for the ETH DPHPC project
-*Towards Memory-Efficient Training of WeatherGenerator*: profiling and optimizing the data-loading pipeline,
-from storage to CPU memory to the GPU and the encoder.
+An ETH DPHPC research fork of [ecmwf/WeatherGenerator](https://github.com/ecmwf/WeatherGenerator) for _Towards Memory-Efficient Training of WeatherGenerator_. The project profiles and optimizes the training data path from storage through CPU memory to GPU inputs and the encoder.
 
-- [Running on JSC JUPITER](docs/jupiter.md): one-time setup and daily use
-- [Experiments](experiments/): runs and their results
+## Ongoing ETH team project
 
-For the model itself and the upstream development guidelines, see the [original repository](https://github.com/ecmwf/WeatherGenerator).
+I am working on this project as part of an ETH DPHPC team. Our focus is profiling and improving memory efficiency in WeatherGenerator's training data pipeline. This personal fork makes the shared code, experiment records, and research setup visible while retaining the team's and upstream contributors' history.
+
+The working branch is `dphpc/dev`. The underlying WeatherGenerator model comes from the upstream collaboration.
+
+## Architecture and research scope
+
+1. Configured readers load multiple weather-data streams.
+2. The multi-stream sampler normalizes and tokenizes source and target data, taking spatial parallelism into account.
+3. Batch containers collect stream data and metadata, support pinned memory, and transfer inputs to the device.
+4. The training stack runs the model and records losses, memory use, and throughput.
+5. Research runs are submitted on JSC JUPITER; saved experiment summaries capture both successful and failed runs.
+
+## Code map
+
+| Location                          | Purpose                                                                   |
+| --------------------------------- | ------------------------------------------------------------------------- |
+| `src/weathergen/datasets/`        | Readers, multi-stream sampling, tokenization, batches, and memory pinning |
+| `src/weathergen/model/`           | Model, encoder, attention, and spatial-parallel computation               |
+| `src/weathergen/train/`           | Training, losses, and supporting utilities                                |
+| `src/weathergen/utils/`           | Distributed execution, performance metrics, and profiling                 |
+| `packages/`                       | Common configuration, evaluation, metrics, and extra readers              |
+| `config/`                         | Model, data-stream, and profiling configurations                          |
+| `experiments/`                    | Saved run configurations, metrics, and generated index                    |
+| `tests/` and `integration_tests/` | Unit and integration checks                                               |
+| `Makefile`                        | JUPITER setup, environment checks, training, and profiling                |
+
+## Tech stack and prerequisites
+
+Python 3.12 (`>=3.12,<3.13`), PyTorch, NumPy, Zarr, Dask, OmegaConf, anemoi datasets, and uv workspaces. GPU runs use the configured CUDA/FlashAttention dependencies.
+
+The current dependency configuration targets Linux aarch64. Full training requires JUPITER access, project memberships, datasets, and the separate `WeatherGenerator-private` companion repository. Do not assume that a generic laptop installation can reproduce a training run.
+
+## Get the project
+
+```sh
+git clone --branch dphpc/dev https://github.com/martinmaranon2/WeatherGenerator.git
+cd WeatherGenerator
+make help
+```
+
+The local `make help` command lists supported targets without submitting a job.
+
+## Setup and run on JUPITER
+
+Follow [Running on JSC JUPITER](docs/jupiter.md) for access prerequisites, SSH/MFA, companion-repository layout, and the optional minion workflow.
+
+Once those prerequisites are satisfied, run the following **on a JUPITER login node from the checkout**:
+
+```sh
+make init
+make check
+make train
+# Alternative: submit the same baseline with Nsight Systems profiling.
+make profile
+```
+
+`make init` installs the environment and may add the budget-account setting to your remote shell configuration. `make train` and `make profile` submit compute jobs. The defaults select the operan base configuration, the 100-step memory baseline overlay, one node, and 30 minutes. Override Make variables deliberately when running a different experiment.
+
+The Makefile passes the operan file as `--base-config`; preserving that distinction matters because merging it over the default configuration changes memory-pinning behavior. See the JUPITER notes and recorded failed runs.
+
+## Experiments and verification
+
+See [experiments](experiments/) for recorded run results. Its README is generated by `experiments/save.py`; do not edit that table by hand. The script retrieves run information, so review its environment prerequisites before using it.
+
+Audit on 2026-10-22: `make help` was executed successfully. The README's training flow was checked against the Makefile, JUPITER guide, dependency configuration, sampler, and batch code. HPC setup, training, profiling, and the full test suite were not executed: they require the cluster environment, companion repository, and datasets. Existing experiment results are historical records, not new benchmark measurements from this audit.
+
+## Contributing and attribution
+
+Preserve upstream copyrights, [LICENSE](LICENSE), and [NOTICE](NOTICE). Use branches and pull requests against the team's working branch; avoid restructuring shared training paths for portfolio presentation. The existing [contribution guide](CONTRIBUTING.md) contains upstream conventions; the fork's `dphpc/dev` workflow and current team instructions determine the appropriate target here.
+
+This personal fork preserves the shared source and its contributor history: [maforn/WeatherGenerator](https://github.com/maforn/WeatherGenerator).
